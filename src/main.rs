@@ -22,7 +22,7 @@ use humantime;
 use std::{
     env,
     io::{self, Write},
-    process::{Command, Stdio},
+    process::Command,
     thread,
     time::Duration,
 };
@@ -37,7 +37,7 @@ const TICK_DURATION: Duration = Duration::from_secs(1);
 // BUG: If we run it with 1s as an argument it panics
 fn main() {
     let args: Vec<String> = env::args().collect();
-    dbg!(&args);
+    // dbg!(&args);
 
     if args.len() == 1 || &args[1] == "--help" {
         println!("Oh noes");
@@ -49,8 +49,12 @@ fn main() {
     let input_duration =
         humantime::parse_duration(input_time).expect("Should parse user input to duration");
 
-    let mut result = input_duration.checked_sub(TICK_DURATION).expect("hello");
+    let mut result = input_duration
+        .checked_sub(TICK_DURATION)
+        .expect("Should subtract a second from duration");
     let mut seconds = input_duration.as_secs();
+
+    dbg!(seconds);
 
     while seconds > 0 {
         let label = humantime::format_duration(result).to_string();
@@ -60,8 +64,12 @@ fn main() {
         print!("{status}");
         let _ = io::stdout().flush();
 
-        result = result.checked_sub(TICK_DURATION).expect("hello");
-        seconds = result.as_secs();
+        if seconds == 1 {
+            seconds = 0;
+        } else {
+            result = result.checked_sub(TICK_DURATION).expect("hello 2");
+            seconds = result.as_secs();
+        }
 
         // repeat every second
         thread::sleep(TICK_DURATION);
@@ -77,10 +85,14 @@ fn main() {
 
     dbg!(&input_string_fragments);
 
-    let handle = Command::new(user_command)
-        .arg(&input_string_fragments[1])
-        .status()
-        .expect("Error ls cmd");
+    let mut command = Command::new(user_command);
+
+    for fragment in &input_string_fragments[1..] {
+        command.arg(fragment);
+    }
+    // let arguments = input_string_fragments.into_iter().map(|x| command.arg(x));
+
+    command.status().expect("Error ls cmd");
 
     // TODO: Write this back to the terminal so that it can be piped to another tool
     // io::stdout().write()
