@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 humantime = "2.1"
-chrono = "0.4"
-chrono-humanize = "0.2"
+indicatif = "0.17.1"
