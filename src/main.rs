@@ -8,8 +8,8 @@
 // test-blah 1h35m15s
 // test-blah 1h35m15s "hello, world" | notify-send
 // ------------------
-// Remaining time: 15 minutes and 35 seconds
 // 0% [########-------------------------------] 100%
+// Remaining time: 15 minutes and 35 seconds
 
 // ------------------
 // Help notices:
@@ -19,14 +19,8 @@
 // You should provide an argument in the following format ...
 // ---------------------------
 use humantime;
-use indicatif::ProgressBar;
-use std::{
-    env,
-    io::{self, Write},
-    process::Command,
-    thread,
-    time::Duration,
-};
+use indicatif::{ProgressBar, ProgressStyle};
+use std::{env, process::Command, thread, time::Duration};
 // use std::time::{Duration, SystemTime};
 
 const TICK_DURATION: Duration = Duration::from_secs(1);
@@ -36,6 +30,29 @@ const TICK_DURATION: Duration = Duration::from_secs(1);
 // - Why do I need as_str for the argument
 // - Traits?
 // BUG: If we run it with 1s as an argument it panics
+
+fn generate_progress_message(duration: Duration, command: &str) -> String {
+    let humanized_duration = humantime::format_duration(duration).to_string();
+    if command.is_empty() {
+        format!("Time remaining {humanized_duration}")
+    } else {
+        format!("Time remaining {humanized_duration} | Payload: {command}")
+    }
+}
+
+fn create_progress_bar() -> ProgressBar {
+    let progress_bar = ProgressBar::new(100);
+    progress_bar.set_style(ProgressStyle::with_template("{wide_bar} {percent}%\n{msg}").unwrap());
+    progress_bar
+}
+
+fn get_percentage_completed(total_duration: Duration, current_duration: Duration) -> u64 {
+    let total_seconds: f32 = total_duration.as_secs_f32();
+    let current_seconds: f32 = current_duration.as_secs_f32();
+    let completion = 100.0 - ((current_seconds / total_seconds) * 100.0);
+    completion as u64
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -44,57 +61,52 @@ fn main() {
         return;
     }
 
-    let input_time = &args[1];
+    let input_command = &args[1];
+    let input_string = if args.len() > 2 { &args[2] } else { "" };
 
-    let input_duration =
-        humantime::parse_duration(input_time).expect("Should parse user input to duration");
+    // Parse the duration from passed by the user
+    let duration: Duration =
+        humantime::parse_duration(input_command).expect("Should parse user input to duration");
 
-    let mut input_duration_subtracted = input_duration
+    let mut subtracted_duration = duration
         .checked_sub(TICK_DURATION)
         .expect("Should subtract a second from duration");
-    let mut seconds = input_duration.as_secs();
+    let mut seconds = duration.as_secs();
 
-    let progress_bar = ProgressBar::new(100);
+    let progress_bar = create_progress_bar();
 
     while seconds > 0 {
-        progress_bar.inc(1);
+        let percentage_completion = get_percentage_completed(duration, subtracted_duration);
+        progress_bar.set_position(percentage_completion);
 
-        let label = humantime::format_duration(input_duration_subtracted).to_string();
-        let status = format!("\rTime remaining {label}\t");
-
-        // Is this the most idiomatic way to print characters on the same line? I DUNNO!
-        print!("{status}");
-        let _ = io::stdout().flush();
+        let status = generate_progress_message(subtracted_duration, input_string);
+        progress_bar.set_message(format!("{status}"));
 
         if seconds == 1 {
             seconds = 0;
         } else {
-            input_duration_subtracted = input_duration_subtracted
+            subtracted_duration = subtracted_duration
                 .checked_sub(TICK_DURATION)
                 .expect("Should subtract a second from duration");
 
-            seconds = input_duration_subtracted.as_secs();
+            seconds = subtracted_duration.as_secs();
         }
 
         thread::sleep(TICK_DURATION);
     }
 
-    if args.len() == 2 {
-        progress_bar.finish_with_message("done");
+    if input_string.is_empty() {
+        progress_bar.finish_with_message("Done!");
         return;
     }
 
-    let input_string = &args[2];
-    let input_string_fragments: Vec<&str> = input_string.split(" ").collect();
-    let user_command = input_string_fragments[0];
+    let command_fragments: Vec<&str> = input_string.split(" ").collect();
+    let mut command = Command::new(command_fragments[0]);
 
-    dbg!(&input_string_fragments);
-
-    let mut command = Command::new(user_command);
-
-    for fragment in &input_string_fragments[1..] {
+    for fragment in &command_fragments[1..] {
         command.arg(fragment);
     }
 
-    command.status().expect("Error ls cmd");
+    command.status().expect("Can't process command");
+    progress_bar.finish_with_message("Done!");
 }
