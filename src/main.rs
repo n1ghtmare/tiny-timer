@@ -1,35 +1,23 @@
-// Command line tool to take in a time in seconds, minutes, hours, days (or all combined) and
-// return a status bar with time remaining, once it's over you should be able to pipe commands after it's done
-// ======================================================
-// test-blah 35s
-// test-blah 1h
-// test-blah 15s
-// test-blah 123m
-// test-blah 1h35m15s
-// test-blah 1h35m15s "hello, world" | notify-send
-// ------------------
-// 0% [########-------------------------------] 100%
-// Remaining time: 15 minutes and 35 seconds
-
-// ------------------
-// Help notices:
-// test-blah --help
-// test-blah
-// =========================================
-// You should provide an argument in the following format ...
-// ---------------------------
 use humantime;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{env, process::Command, thread, time::Duration};
-// use std::time::{Duration, SystemTime};
 
 const TICK_DURATION: Duration = Duration::from_secs(1);
 
-// TODO: Questions (stuff to learn?):
-// - Difference between &str and String????
-// - Why do I need as_str for the argument
-// - Traits?
-// BUG: If we run it with 1s as an argument it panics
+const HELP_MESSAGE: &str = "Usage:
+    timer-blah [duration] \"[command to execute when done]\"
+
+EXAMPLES:
+    timer-blah 47m11s
+    timer-blah 10s
+    timer-blah 1d
+    timer-blah 1y
+    timer-blah 1h43m9s \"notify-send hello\"
+    timer-blah 1h43m9s \"notify-send 'hello world'\"
+
+META OPTIONS:
+    -?, --help    print this help message
+";
 
 fn generate_progress_message(duration: Duration, command: &str) -> String {
     let humanized_duration = humantime::format_duration(duration).to_string();
@@ -42,7 +30,8 @@ fn generate_progress_message(duration: Duration, command: &str) -> String {
 
 fn create_progress_bar() -> ProgressBar {
     let progress_bar = ProgressBar::new(100);
-    progress_bar.set_style(ProgressStyle::with_template("{wide_bar} {percent}%\n{msg}").unwrap());
+    progress_bar
+        .set_style(ProgressStyle::with_template("\n{wide_bar} {percent}%\n-\n{msg}").unwrap());
     progress_bar
 }
 
@@ -56,8 +45,8 @@ fn get_percentage_completed(total_duration: Duration, current_duration: Duration
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() == 1 || &args[1] == "--help" {
-        println!("Oh noes");
+    if args.len() == 1 || &args[1] == "--help" || &args[1] == "-?" {
+        println!("{HELP_MESSAGE}");
         return;
     }
 
@@ -100,7 +89,7 @@ fn main() {
         return;
     }
 
-    let command_fragments: Vec<&str> = input_string.split(" ").collect();
+    let command_fragments: Vec<&str> = input_string.split(" '").collect();
     let mut command = Command::new(command_fragments[0]);
 
     for fragment in &command_fragments[1..] {
