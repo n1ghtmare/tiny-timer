@@ -89,7 +89,7 @@ fn main() {
         return;
     }
 
-    let command_fragments: Vec<&str> = input_string.split(" '").collect();
+    let command_fragments: Vec<&str> = input_string.split(" ").collect();
     let mut command = Command::new(command_fragments[0]);
 
     for fragment in &command_fragments[1..] {
