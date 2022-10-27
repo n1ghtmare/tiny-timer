@@ -1,5 +1,6 @@
 use humantime;
 use indicatif::{ProgressBar, ProgressStyle};
+use regex::Regex;
 use std::{env, process::Command, thread, time::Duration};
 
 const TICK_DURATION: Duration = Duration::from_secs(1);
@@ -42,6 +43,27 @@ fn get_percentage_completed(total_duration: Duration, current_duration: Duration
     completion as u64
 }
 
+// This should take care of cases where the command contains multiple words with single quotes, which we should threat as a single argument
+// Example: The command "notify-send --some-argument --another-one 'hello twitch chat'", should produce:
+// [notify-send, --some-argument, --another-one, 'hello twitch chat']
+fn parse_command_fragments(command: &str) -> Vec<&str> {
+    // should match anything within '' (including the quotes we're getting rid of them later)
+    let quotes_regex = Regex::new(r"'([^']*?)'").unwrap();
+
+    let arguments: Vec<&str> = quotes_regex
+        .split(command)
+        .flat_map(|x| x.split(" "))
+        .filter(|x| !x.is_empty())
+        .collect();
+
+    let arguments_quoted: Vec<&str> = quotes_regex
+        .captures_iter(command)
+        .map(|x| x.get(0).map_or("", |m| m.as_str()).trim_matches('\''))
+        .collect();
+
+    [arguments, arguments_quoted].concat()
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -55,11 +77,11 @@ fn main() {
 
     // Parse the duration from passed by the user
     let duration: Duration =
-        humantime::parse_duration(input_command).expect("Should parse user input to duration");
+        humantime::parse_duration(input_command).expect("Can't parse user input");
 
     let mut subtracted_duration = duration
         .checked_sub(TICK_DURATION)
-        .expect("Should subtract a second from duration");
+        .expect("Can't subtract a second from duration");
     let mut seconds = duration.as_secs();
 
     let progress_bar = create_progress_bar();
@@ -76,7 +98,7 @@ fn main() {
         } else {
             subtracted_duration = subtracted_duration
                 .checked_sub(TICK_DURATION)
-                .expect("Should subtract a second from duration");
+                .expect("Can't subtract a second from duration");
 
             seconds = subtracted_duration.as_secs();
         }
@@ -89,13 +111,12 @@ fn main() {
         return;
     }
 
-    let command_fragments: Vec<&str> = input_string.split(" ").collect();
-    let mut command = Command::new(command_fragments[0]);
+    let command_fragments: Vec<&str> = parse_command_fragments(&input_string);
 
-    for fragment in &command_fragments[1..] {
-        command.arg(fragment);
-    }
+    Command::new(&command_fragments[0])
+        .args(&command_fragments[1..])
+        .status()
+        .expect("Can't process command");
 
-    command.status().expect("Can't process command");
     progress_bar.finish_with_message("Done!");
 }
