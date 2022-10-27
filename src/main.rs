@@ -6,15 +6,15 @@ use std::{env, process::Command, thread, time::Duration};
 const TICK_DURATION: Duration = Duration::from_secs(1);
 
 const HELP_MESSAGE: &str = "Usage:
-    timer-blah [duration] \"[command to execute when done]\"
+    tiny-timer [duration] \"[command to execute when done]\"
 
 EXAMPLES:
-    timer-blah 47m11s
-    timer-blah 10s
-    timer-blah 1d
-    timer-blah 1y
-    timer-blah 1h43m9s \"notify-send hello\"
-    timer-blah 1h43m9s \"notify-send 'hello world'\"
+    tiny-timer 47m11s
+    tiny-timer 10s
+    tiny-timer 1d
+    tiny-timer 1y
+    tiny-timer 1h43m9s \"notify-send hello\"
+    tiny-timer 1h43m9s \"notify-send 'hello world'\"
 
 META OPTIONS:
     -?, --help    print this help message

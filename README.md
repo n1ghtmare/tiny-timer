@@ -3,23 +3,23 @@ A simple and tiny CLI timer written in rust. You provide a duration in a humaniz
 **Usage:**
 
 ```bash
-$ timer-blah [duration] "[command to execute when done]"
+$ tiny-timer [duration] "[command to execute when done]"
 ```
 
 Examples:
 
 ```bash
-$ timer-blah 47m11s
-$ timer-blah 10s
-$ timer-blah 1d
-$ timer-blah 1y
-$ timer-blah 1h43m9s "notify-send hello"
-$ timer-blah 1h43m9s "notify-send 'hello world'"
+$ tiny-timer 47m11s
+$ tiny-timer 10s
+$ tiny-timer 1d
+$ tiny-timer 1y
+$ tiny-timer 1h43m9s "notify-send hello"
+$ tiny-timer 1h43m9s "notify-send 'hello world'"
 ```
 
 Nothing much to it. Install it through cargo running: 
 
 ```bash
-cargo install timer-blah
+cargo install tiny-timer
 ```
 

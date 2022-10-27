@@ -100,7 +100,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "timer-blah"
+name = "tiny-timer"
 version = "0.1.0"
 dependencies = [
  "humantime",
