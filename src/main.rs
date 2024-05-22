@@ -1,4 +1,3 @@
-use humantime;
 use indicatif::{ProgressBar, ProgressStyle};
 use regex::Regex;
 use std::{env, process::Command, thread, time::Duration};
@@ -52,7 +51,7 @@ fn parse_command_fragments(command: &str) -> Vec<&str> {
 
     let arguments: Vec<&str> = quotes_regex
         .split(command)
-        .flat_map(|x| x.split(" "))
+        .flat_map(|x| x.split(' '))
         .filter(|x| !x.is_empty())
         .collect();
 
@@ -79,6 +78,9 @@ fn main() {
     let duration: Duration =
         humantime::parse_duration(input_command).expect("Can't parse user input");
 
+    // Add a second to the duration to make sure we don't miss the last second
+    let duration = duration + Duration::from_secs(1);
+
     let mut subtracted_duration = duration
         .checked_sub(TICK_DURATION)
         .expect("Can't subtract a second from duration");
@@ -91,7 +93,7 @@ fn main() {
         progress_bar.set_position(percentage_completion);
 
         let status = generate_progress_message(subtracted_duration, input_string);
-        progress_bar.set_message(format!("{status}"));
+        progress_bar.set_message(status.to_string());
 
         if seconds == 1 {
             seconds = 0;
@@ -111,9 +113,9 @@ fn main() {
         return;
     }
 
-    let command_fragments: Vec<&str> = parse_command_fragments(&input_string);
+    let command_fragments: Vec<&str> = parse_command_fragments(input_string);
 
-    Command::new(&command_fragments[0])
+    Command::new(command_fragments[0])
         .args(&command_fragments[1..])
         .status()
         .expect("Can't process command");
